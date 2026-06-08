@@ -8,7 +8,7 @@ def train(model, loader, epochs=30, lr=1e-3):
     optimizer = torch.optim.Adam(model.parameters(), lr=lr)
     criterion = nn.MSELoss()
 
-    # Learning rate scheduler: halve LR if loss doesn't improve for 2 epochs
+    # Learning rate scheduler: halve LR if loss doesn't improve for 2 epochs <= no idea wtf is this
     scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
         optimizer, patience=2, factor=0.5
     )
@@ -60,3 +60,13 @@ def predict_n_steps(model, seed_seq: np.ndarray, n_steps: int, device):
             current = torch.cat([current[:, 1:, :], new_step], dim=1)
 
     return np.array(preds)
+
+def predict_for_point(w_i,
+                      all_mid_data,
+                      seq_len,
+                      model,
+                      n_predict,
+                      device
+                      ):
+    seed = all_mid_data[w_i - seq_len : w_i]
+    return w_i, predict_n_steps(model, seed, n_predict, device)
