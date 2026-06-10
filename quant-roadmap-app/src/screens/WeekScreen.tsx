@@ -6,9 +6,9 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import * as Haptics from 'expo-haptics';
-import type { RootStackParamList } from '../../App';
+import type { RootStackParamList } from '../types/navigation';
 import { ALL_WEEKS } from '../data/roadmap';
-import { useAppStore } from '../../App';
+import { useAppStore } from '../store/StoreContext';
 import { XP_ACTIONS } from '../store/useStore';
 import type { WeekStatus } from '../store/useStore';
 

@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useAppStore } from '../../App';
+import { useAppStore } from '../store/StoreContext';
 import { ACHIEVEMENTS, XP_PER_LEVEL } from '../store/useStore';
 import { ALL_WEEKS } from '../data/roadmap';
 import AsyncStorage from '@react-native-async-storage/async-storage';

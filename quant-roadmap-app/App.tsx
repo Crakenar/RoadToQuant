@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, createContext, useContext } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createStackNavigator } from '@react-navigation/stack';
@@ -14,6 +14,7 @@ import WeekScreen from './src/screens/WeekScreen';
 import TimerScreen from './src/screens/TimerScreen';
 import StatsScreen from './src/screens/StatsScreen';
 import { useStore } from './src/store/useStore';
+import { StoreContext } from './src/store/StoreContext';
 import { scheduleAllNotifications } from './src/utils/notifications';
 
 export type RootStackParamList = {
@@ -30,13 +31,6 @@ export type TabParamList = {
 
 const Stack = createStackNavigator<RootStackParamList>();
 const Tab = createBottomTabNavigator<TabParamList>();
-
-const StoreContext = createContext<ReturnType<typeof useStore> | null>(null);
-export function useAppStore() {
-  const ctx = useContext(StoreContext);
-  if (!ctx) throw new Error('No store context');
-  return ctx;
-}
 
 const TAB_ICONS: Record<string, string> = {
   Home: '🏠',

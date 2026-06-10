@@ -5,9 +5,9 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import type { StackNavigationProp } from '@react-navigation/stack';
-import type { RootStackParamList } from '../../App';
+import type { RootStackParamList } from '../types/navigation';
 import { ROADMAP } from '../data/roadmap';
-import { useAppStore } from '../../App';
+import { useAppStore } from '../store/StoreContext';
 import type { WeekStatus } from '../store/useStore';
 
 const { width } = Dimensions.get('window');

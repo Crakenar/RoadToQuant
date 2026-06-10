@@ -5,10 +5,10 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
-import { useAppStore } from '../../App';
+import { useAppStore } from '../store/StoreContext';
 import { ALL_WEEKS } from '../data/roadmap';
 import { XP_PER_LEVEL } from '../store/useStore';
-import type { RootStackParamList } from '../../App';
+import type { RootStackParamList } from '../types/navigation';
 import type { StackNavigationProp } from '@react-navigation/stack';
 
 const { width } = Dimensions.get('window');

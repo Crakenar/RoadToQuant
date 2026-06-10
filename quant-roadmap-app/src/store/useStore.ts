@@ -189,14 +189,19 @@ export function useStore() {
   }, [addXP]);
 
   const dailyCheckin = useCallback(async () => {
-    setState(async prev => {
-      const updated = await updateStreak(prev);
-      const next = { ...updated };
+    const today = getTodayStr();
+    setState(prev => {
+      if (prev.lastActiveDate === today) return prev;
+      const yesterday = new Date();
+      yesterday.setDate(yesterday.getDate() - 1);
+      const yesterdayStr = yesterday.toISOString().split('T')[0];
+      const newStreak = prev.lastActiveDate === yesterdayStr ? prev.streak + 1 : 1;
+      const next = { ...prev, streak: newStreak, lastActiveDate: today };
       AsyncStorage.setItem(STORE_KEY, JSON.stringify(next));
       return next;
-    } as any);
+    });
     await addXP(XP_ACTIONS.daily_checkin);
-  }, [updateStreak, addXP]);
+  }, [addXP]);
 
   const clearNewAchievements = useCallback(() => setNewAchievements([]), []);
 
