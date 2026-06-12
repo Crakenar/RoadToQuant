@@ -6,6 +6,7 @@ import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { Text, View, StyleSheet, Platform } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Notifications from 'expo-notifications';
 
 import HomeScreen from './src/screens/HomeScreen';
@@ -40,11 +41,17 @@ const TAB_ICONS: Record<string, string> = {
 };
 
 function TabNavigator() {
+  const insets = useSafeAreaInsets();
+  const bottomPad = Math.max(insets.bottom, Platform.OS === 'ios' ? 20 : 12);
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
         headerShown: false,
-        tabBarStyle: styles.tabBar,
+        tabBarStyle: {
+          ...styles.tabBar,
+          paddingBottom: bottomPad,
+          height: 52 + bottomPad,
+        },
         tabBarActiveTintColor: '#4D8EF0',
         tabBarInactiveTintColor: '#4A5568',
         tabBarLabelStyle: styles.tabLabel,
@@ -126,9 +133,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#0F1629',
     borderTopColor: '#1E2A3A',
     borderTopWidth: 1,
-    paddingBottom: Platform.OS === 'ios' ? 20 : 8,
     paddingTop: 8,
-    height: Platform.OS === 'ios' ? 80 : 60,
   },
   tabLabel: {
     fontSize: 11,

@@ -7,15 +7,20 @@
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "dark",
     "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
       "backgroundColor": "#0A0E1A"
     },
-    "assetBundlePatterns": ["**/*"],
+    "assetBundlePatterns": [
+      "**/*"
+    ],
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.teo.quantpath"
     },
     "android": {
       "adaptiveIcon": {
+        "foregroundImage": "./assets/icon.png",
         "backgroundColor": "#0A0E1A"
       },
       "package": "com.teo.quantpath"
@@ -29,6 +34,11 @@
           "sounds": []
         }
       ]
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "b3e887c3-3b35-44b4-a288-7b031a27f52e"
+      }
+    }
   }
 }
