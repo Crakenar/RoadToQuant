@@ -7,3 +7,5 @@ StockPrediction/Stocks/
 .venv/
 
 Resources/
+
+/os-quiz-app/node_modules

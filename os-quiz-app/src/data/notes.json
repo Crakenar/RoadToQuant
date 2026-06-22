@@ -1,0 +1,418 @@
+{
+  "os": [
+    {
+      "id": "glossary",
+      "title": "Glossary & Abbreviations",
+      "icon": "📚",
+      "color": "#6B7280",
+      "sections": [
+        {
+          "heading": "Process & CPU",
+          "bullets": [
+            "OS — Operating System: manages hardware resources and provides services to programs",
+            "PCB — Process Control Block: kernel struct storing all process state (registers, PID, state, open files)",
+            "PID — Process ID: unique integer identifier for a running process",
+            "PC / IP — Program Counter / Instruction Pointer: address of the next instruction to execute",
+            "SP — Stack Pointer: points to the top of the current stack frame",
+            "ISA — Instruction Set Architecture: hardware-visible interface (e.g. x86, ARM, RISC-V)",
+            "LDE — Limited Direct Execution: run process directly on CPU while OS retains control via traps + timer IRQs",
+            "syscall — System Call: user process requests OS service by triggering a software trap",
+            "IRQ — Interrupt Request: hardware signal to the CPU to handle an event",
+            "ISR — Interrupt Service Routine: kernel function that handles an interrupt",
+            "IVT — Interrupt Vector Table: maps interrupt numbers to their handler addresses"
+          ]
+        },
+        {
+          "heading": "Scheduling",
+          "bullets": [
+            "FIFO / FCFS — First In First Out / First Come First Served: simplest scheduling policy",
+            "SJF — Shortest Job First: optimal turnaround, non-preemptive, requires knowing job length",
+            "STCF — Shortest Time-to-Completion First: preemptive version of SJF",
+            "RR — Round Robin: each job runs for a fixed time slice, great for response time",
+            "MLFQ — Multi-Level Feedback Queue: approximates SJF using past behavior",
+            "CFS — Completely Fair Scheduler: Linux default, uses red-black tree + vruntime",
+            "vruntime — Virtual Runtime: CFS measure of CPU time consumed, weighted by niceness",
+            "SQMS — Single-Queue Multiprocessor Scheduling: one shared queue for all CPUs",
+            "MQMS — Multi-Queue Multiprocessor Scheduling: one queue per CPU with work-stealing"
+          ]
+        },
+        {
+          "heading": "Memory",
+          "bullets": [
+            "VA / VPN — Virtual Address / Virtual Page Number: address seen by user-space code",
+            "PA / PFN — Physical Address / Physical Frame Number: actual DRAM address",
+            "MMU — Memory Management Unit: hardware translating VA→PA on every memory access",
+            "TLB — Translation Lookaside Buffer: hardware cache of recent VA→PA translations",
+            "ASID — Address Space ID: TLB tag per process, avoids full TLB flush on context switch",
+            "PTE — Page Table Entry: maps a VPN to a PFN plus metadata bits",
+            "PT — Page Table: per-process array of PTEs indexed by VPN",
+            "PDE — Page Directory Entry: top-level entry in a multi-level page table",
+            "CR3 — Control Register 3 (x86): holds physical address of the page table root",
+            "COW — Copy-On-Write: share frames read-only between processes; copy only on first write",
+            "OOM — Out Of Memory: kernel kills processes when all memory is exhausted",
+            "LRU — Least Recently Used: evict the page not used for the longest time"
+          ]
+        },
+        {
+          "heading": "PTE / TLB Bits",
+          "bullets": [
+            "Valid (TLB): this TLB slot holds a usable mapping (0 = unused slot)",
+            "Present (PTE): page is in physical RAM (0 = on disk → triggers page fault)",
+            "Dirty: page has been written and must be flushed to disk before eviction",
+            "Reference / Accessed: page was recently accessed; used by the clock algorithm",
+            "Protection: encodes read / write / execute permissions for the page"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "process",
+      "title": "Process & CPU",
+      "icon": "⚙️",
+      "color": "#5B7FDB",
+      "sections": [
+        {
+          "heading": "What is a Process? (Ch. 4)",
+          "bullets": [
+            "A process = a running program — the OS abstraction of a CPU",
+            "Address space: the memory the process can address (code, stack, heap)",
+            "Machine state: PC, SP, general-purpose registers — everything needed to resume",
+            "OS creates a process: load code from disk → allocate stack + heap → init I/O (stdin/stdout/stderr) → jump to main()"
+          ]
+        },
+        {
+          "heading": "Process States",
+          "bullets": [
+            "Running: currently executing on the CPU",
+            "Ready: runnable but waiting for the CPU to be assigned",
+            "Blocked: waiting for I/O or an event (disk read, network, sleep)",
+            "Zombie: finished but parent hasn't called wait() yet — entry remains in process table",
+            "Running → Ready: preempted by scheduler (timer interrupt)",
+            "Running → Blocked: issued a blocking syscall (e.g. read())",
+            "Blocked → Ready: I/O completes, event arrives",
+            "Ready → Running: scheduler picks this process next"
+          ]
+        },
+        {
+          "heading": "Process API (Ch. 5)",
+          "bullets": [
+            "fork(): creates child as near-exact copy of parent. Returns child PID to parent, 0 to child, -1 on error",
+            "wait() / waitpid(): parent blocks until child terminates; cleans up the zombie entry",
+            "exec(): replaces the calling process image with a new program — never returns on success",
+            "Shell pattern: fork() → exec() in child, wait() in parent — used for every command you type",
+            "Zombie process: child that exited but whose status hasn't been collected by parent"
+          ]
+        },
+        {
+          "heading": "Limited Direct Execution (Ch. 6)",
+          "bullets": [
+            "Goal: run processes at full CPU speed while the OS retains control",
+            "User mode: process runs, cannot issue privileged instructions",
+            "Kernel mode: OS runs, full hardware access",
+            "System call: process executes trap → CPU switches to kernel mode → jump to IVT handler → return-from-trap",
+            "Timer interrupt: hardware fires periodically → OS preempts current process and can switch",
+            "Context switch: save current process registers to PCB → restore next process registers from PCB → return-from-trap",
+            "Cost: ~1–10µs per context switch; TLB flush on switch is the biggest overhead"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "scheduling",
+      "title": "Scheduling",
+      "icon": "📅",
+      "color": "#E87040",
+      "sections": [
+        {
+          "heading": "Metrics (Ch. 7)",
+          "bullets": [
+            "Turnaround time = completion time − arrival time (measures performance / throughput)",
+            "Response time = first run time − arrival time (measures interactivity)",
+            "The trade-off: optimizing turnaround (run to completion) hurts response time and vice versa",
+            "FIFO: simple, bad if long jobs arrive first (convoy effect)",
+            "SJF: optimal turnaround, needs job length upfront, non-preemptive",
+            "STCF: preemptive SJF, optimal turnaround but poor response time",
+            "Round Robin: excellent response time, poor turnaround (stretches all jobs)"
+          ]
+        },
+        {
+          "heading": "MLFQ (Ch. 8)",
+          "bullets": [
+            "Rule 1: If Priority(A) > Priority(B) → A runs",
+            "Rule 2: If Priority(A) = Priority(B) → A and B run in Round Robin",
+            "Rule 3: New job enters at the highest priority queue",
+            "Rule 4: Job uses full time allotment at a level → demoted to lower queue",
+            "Rule 5: After period S → boost all jobs to top queue (prevents CPU-bound starvation)",
+            "MLFQ approximates SJF/STCF without needing job lengths upfront",
+            "Anti-gaming: count total CPU time at a level, not just per-slice (can't reset by issuing I/O)",
+            "Parameters: number of queues, time slice per queue, boost period S"
+          ]
+        },
+        {
+          "heading": "Linux CFS (Ch. 9)",
+          "bullets": [
+            "CFS tracks vruntime per process and always picks the process with the lowest vruntime",
+            "Data structure: red-black tree ordered by vruntime — O(log n) insert/remove, O(1) min",
+            "nice value −20 to +19: lower nice = higher priority = slower vruntime increase",
+            "vruntime_delta = actual_time × (weight_0 / weight_of_process)",
+            "Target latency: every runnable process runs at least once per scheduling period",
+            "Sleeping process: removed from tree; on wake-up vruntime set to current min (avoids burst)"
+          ]
+        },
+        {
+          "heading": "Multiprocessor Scheduling (Ch. 10)",
+          "bullets": [
+            "Cache affinity: prefer running a process on the same CPU it last ran on (warm cache)",
+            "Bus snooping: caches monitor bus; on write, other caches' copies are invalidated",
+            "SQMS: one global queue for all CPUs — simple but lock contention + no cache affinity",
+            "MQMS: one queue per CPU — scalable + affinity, but needs work-stealing for balance",
+            "Work stealing: idle CPU peeks at another CPU's queue and steals jobs if imbalanced"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "memory",
+      "title": "Memory & Segmentation",
+      "icon": "🧠",
+      "color": "#8B5CF6",
+      "sections": [
+        {
+          "heading": "Address Space (Ch. 13)",
+          "bullets": [
+            "Every pointer printed in user code is a virtual address — never physical",
+            "Two processes can share the same virtual address (0x1000) mapping to different physical frames",
+            "Address space layout (low → high): Code → Heap (grows up) → [free] → Stack (grows down)",
+            "Goals of virtual memory: transparency, efficiency (hardware TLB), protection (isolation)"
+          ]
+        },
+        {
+          "heading": "C Memory API (Ch. 14)",
+          "bullets": [
+            "malloc(size): allocates size bytes on the heap, returns pointer (or NULL on failure)",
+            "free(ptr): returns the allocation back to the allocator — must free exactly once",
+            "sbrk() / brk(): syscall to grow the heap (move program break upward)",
+            "mmap(): maps files or anonymous memory — used for large allocations by malloc",
+            "Common bugs: memory leak (forget free), use-after-free, double-free, buffer overflow"
+          ]
+        },
+        {
+          "heading": "MMU & Base+Bounds (Ch. 15)",
+          "bullets": [
+            "MMU (Memory Management Unit): hardware inside the CPU chip that translates VA→PA on every access",
+            "Interposing: transparent layer between requester and resource — you write VA, hardware silently uses PA",
+            "Base+bounds: physical = virtual + base, if virtual ≥ bounds → segfault",
+            "OS sets base/bounds registers on each context switch (stored in PCB)"
+          ]
+        },
+        {
+          "heading": "Segmentation (Ch. 16)",
+          "bullets": [
+            "Each logical segment (code, heap, stack) gets its own base+bounds pair",
+            "Segments placed independently in physical memory",
+            "Code segment can be shared (read-only) across processes",
+            "Out-of-bounds: hardware detects offset ≥ bounds → raises SIGSEGV",
+            "Problem: external fragmentation — gaps between segments too small to reuse"
+          ]
+        },
+        {
+          "heading": "Free Space Management (Ch. 17)",
+          "bullets": [
+            "Free list: linked list of free chunks; each chunk has an embedded header (size + next pointer)",
+            "malloc: find chunk ≥ N in free list, split if needed; free: insert back and coalesce",
+            "Internal fragmentation: wasted space inside an allocation (allocated 16 bytes, needed 9 → 7 wasted)",
+            "External fragmentation: free memory exists but in non-contiguous pieces too small for the request",
+            "Coalescing: on free(), merge adjacent free blocks to prevent fragmentation",
+            "Best Fit: smallest chunk that fits — low internal waste but slow and causes small leftover fragments",
+            "First Fit: first chunk that fits — fast but fragments the beginning of the list",
+            "Slab allocator (Linux): pools of fixed-size objects (PCBs, inodes) — zero fragmentation for kernel objects"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "paging",
+      "title": "Paging & TLB",
+      "icon": "📄",
+      "color": "#059669",
+      "sections": [
+        {
+          "heading": "Paging Basics (Ch. 18)",
+          "bullets": [
+            "Pages: virtual address space divided into fixed-size chunks (typically 4KB)",
+            "Frames: physical memory divided into same-size chunks",
+            "VA = [ VPN | Offset ] — VPN indexes into page table to get PFN",
+            "Physical address = PFN × page_size + offset",
+            "Page table: per-process array of PTEs — one PTE per virtual page",
+            "PTE bits: Valid, Present, Dirty, Reference, Protection, PFN",
+            "No external fragmentation (all chunks same size); simple allocation (any free frame works)"
+          ]
+        },
+        {
+          "heading": "Page Table Math",
+          "bullets": [
+            "Offset bits = log₂(page_size) — e.g. 4KB pages → 12 offset bits",
+            "VPN bits = VA_bits − offset_bits — e.g. 32-bit VA, 12 offset → 20 VPN bits",
+            "Number of PTEs = 2^(VPN_bits) — e.g. 2^20 ≈ 1 million entries",
+            "Page table size = entries × bytes_per_PTE — e.g. 2^20 × 4B = 4MB per process",
+            "Physical base of frame: PFN × page_size — e.g. PFN=5, 4KB → 5 × 4096 = 20480"
+          ]
+        },
+        {
+          "heading": "TLB (Ch. 19)",
+          "bullets": [
+            "TLB: hardware cache of recent VPN→PFN translations, inside the MMU",
+            "TLB hit: hardware reads PFN directly — no extra memory access — very fast",
+            "x86 TLB miss: hardware walks page table automatically (hardware-managed)",
+            "MIPS/RISC-V TLB miss: raises trap → OS handler loads entry (software-managed)",
+            "TLB entry: VPN | PFN | Valid | Protection | Dirty | ASID",
+            "Fully associative: any VPN can be in any slot; all slots searched in parallel",
+            "Typical TLB size: 32–128 entries; thrashing if working set > TLB coverage",
+            "Valid (TLB) vs Present (PTE): Valid = TLB slot is usable; Present = page is in RAM"
+          ]
+        },
+        {
+          "heading": "ASID & Context Switch",
+          "bullets": [
+            "Without ASID: flush entire TLB on every context switch (all Valid bits = 0)",
+            "With ASID: tag each TLB entry with process ID — no flush needed on context switch",
+            "ASID is stored in a special hardware register; OS sets it on each context switch",
+            "CR3 (x86): hardware register pointing to the physical address of the page directory root"
+          ]
+        },
+        {
+          "heading": "Multi-Level Page Tables (Ch. 20)",
+          "bullets": [
+            "Problem: single-level page table wastes memory for sparse address spaces",
+            "Solution: break the page table into pages — only allocate what is actually used",
+            "x86-32 two-level: VA = [PD Index | PT Index | Offset]; CR3 → Page Dir → Page Table → PFN",
+            "Advantage: sparse address spaces use very little memory",
+            "Cost: TLB miss requires 2–4 memory accesses instead of 1",
+            "Huge pages (2MB/1GB): fewer TLB entries needed; Linux THP promotes them automatically"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "swap",
+      "title": "Swap & Page Replacement",
+      "icon": "💾",
+      "color": "#DC2626",
+      "sections": [
+        {
+          "heading": "Swap Space (Ch. 21)",
+          "bullets": [
+            "Swap space: reserved disk area for pages that don't fit in physical RAM",
+            "Enables address spaces larger than physical memory — disk is ~100,000× slower than RAM",
+            "Present bit = 0 in PTE → page is on disk; PTE stores the swap offset (disk address)",
+            "Page fault flow: Present=0 trap → OS reads swap offset → I/O to load page → update PTE → retry instruction"
+          ]
+        },
+        {
+          "heading": "Page Replacement Policy (Ch. 22)",
+          "bullets": [
+            "OPT / Bélády: evict the page used farthest in the future — optimal but requires future knowledge",
+            "LRU: evict the page not used for the longest time — best practical policy",
+            "Clock (Second-Chance): approximates LRU with a circular list and reference bit",
+            "Clock algorithm: ref=1 → clear it and move on (second chance); ref=0 → evict",
+            "Dirty page: must be written to disk before eviction; clean page can just be discarded",
+            "Dirty bit set by hardware on any write to the page"
+          ]
+        },
+        {
+          "heading": "Eviction & Thrashing",
+          "bullets": [
+            "High/low watermark: OS starts evicting when free frames < low watermark; stops at high watermark",
+            "kswapd: Linux background daemon that proactively evicts pages to maintain the low watermark",
+            "Thrashing: OS spends more time swapping than doing useful work — working set > physical RAM",
+            "OOM killer: Linux kills a process when all memory + swap is exhausted to free frames",
+            "Working set: set of pages actively used by a process — must fit in RAM to avoid thrashing"
+          ]
+        },
+        {
+          "heading": "Copy-On-Write (COW)",
+          "bullets": [
+            "fork() uses COW: child and parent share all physical frames marked read-only",
+            "First write by either process → protection fault → OS copies only that one page → mark writable",
+            "If child calls exec() immediately after fork(), almost no pages are actually copied — very fast",
+            "COW also used by: mmap(MAP_PRIVATE), shared libraries, VM snapshots"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "linux",
+      "title": "Linux & COW",
+      "icon": "🐧",
+      "color": "#D97706",
+      "sections": [
+        {
+          "heading": "Linux Address Space Layout",
+          "bullets": [
+            "Virtual address 0 is intentionally unmapped — null pointer dereference raises SIGSEGV (loud failure)",
+            "64-bit user space: 0x0000000000000000 → 0x00007FFFFFFFFFFF",
+            "64-bit kernel space: 0xFFFF800000000000 → 0xFFFFFFFFFFFFFFFF",
+            "Kernel is mapped into every process's address space at high addresses — no TLB flush on syscalls",
+            "BSS segment: uninitialized global/static variables, zeroed by OS at program load"
+          ]
+        },
+        {
+          "heading": "Linux Scheduling Classes",
+          "bullets": [
+            "SCHED_NORMAL: normal user processes, uses CFS",
+            "SCHED_RT: real-time processes with hard latency requirements (SCHED_FIFO or SCHED_RR)",
+            "SCHED_IDLE: lowest priority background tasks",
+            "CFS nice range: −20 (highest priority) to +19 (lowest priority)"
+          ]
+        },
+        {
+          "heading": "mmap & Memory Mapping",
+          "bullets": [
+            "mmap(MAP_SHARED): maps a file into memory; writes go directly to the file and are visible to all mappers",
+            "mmap(MAP_PRIVATE): COW mapping — writes create process-private copies, original file unchanged",
+            "Anonymous mmap: not backed by a file — used by malloc for large allocations",
+            "munmap(): unmaps a region and frees its virtual address space"
+          ]
+        },
+        {
+          "heading": "Cache Coherence & Locality",
+          "bullets": [
+            "Temporal locality: recently used data will likely be used again — justifies keeping it in cache",
+            "Spatial locality: data near a used address will likely be used soon — justifies cache line granularity",
+            "Bus snooping: multi-CPU cache coherence — when CPU A writes an address cached by CPU B, CPU B's copy is invalidated",
+            "MESI protocol: Modified, Exclusive, Shared, Invalid — common cache coherence protocol"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "calc",
+      "title": "Calculations",
+      "icon": "🔢",
+      "color": "#0891B2",
+      "sections": [
+        {
+          "heading": "Address Bit Formulas",
+          "bullets": [
+            "offset bits = log₂(page_size)  →  4KB page: log₂(4096) = 12 bits",
+            "VPN bits = total_VA_bits − offset_bits  →  32-bit VA, 4KB: 32 − 12 = 20 bits",
+            "Number of page table entries = 2^(VPN_bits)  →  2^20 ≈ 1 million",
+            "Page table size = 2^(VPN_bits) × bytes_per_PTE  →  2^20 × 4 = 4 MB",
+            "Physical address = PFN × page_size + offset"
+          ]
+        },
+        {
+          "heading": "Worked Examples",
+          "bullets": [
+            "16-bit VA, 512B pages: offset=9 bits (2^9=512), VPN=7 bits (16−9), 128 PTEs",
+            "32-bit VA, 4KB pages: offset=12 bits, VPN=20 bits, 1M PTEs, page table=4MB",
+            "32-bit VA, 8KB pages: offset=13 bits, VPN=19 bits, 512K PTEs, page table=2MB",
+            "VA 0x0001F3AC, 4KB pages: offset = 0x3AC (low 12 bits), VPN = 0x1F = 31",
+            "PFN=5, page_size=4096: physical base = 5 × 4096 = 20480",
+            "Multi-level (10|10|12): VA=0x00401010 → PD=1, PT=1, offset=0x010"
+          ]
+        }
+      ]
+    }
+  ]
+}

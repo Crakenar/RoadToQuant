@@ -1,0 +1,31 @@
+{
+  "expo": {
+    "name": "DevDrill",
+    "slug": "os-quiz-app",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#F7F3EE"
+    },
+    "ios": {
+      "supportsTablet": false
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#F7F3EE"
+      },
+      "package": "com.teo.devdrill"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "8106c1f6-3e0d-46c0-9993-d4aa09c51801"
+      }
+    },
+    "owner": "crakenar"
+  }
+}
