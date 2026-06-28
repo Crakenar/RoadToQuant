@@ -26,7 +26,7 @@ function getScoreEmoji(pct: number): string {
 export default function ResultsScreen() {
   const navigation = useNavigation<ResultsNavProp>();
   const route = useRoute<ResultsRouteProp>();
-  const { score, total, wrongIds, categoryId, mode } = route.params;
+  const { score, total, wrongIds, categoryId, mode, questionIds } = route.params;
 
   const percentage = Math.round((score / total) * 100);
   const emoji = getScoreEmoji(percentage);
@@ -35,10 +35,12 @@ export default function ResultsScreen() {
 
   const handleRetry = () => {
     const categoryName =
-      categoryId === 'all'
-        ? 'Tout réviser'
+      questionIds
+        ? 'Selected questions'
+        : categoryId === 'all'
+        ? 'All questions'
         : questionsData.categories.find((c) => c.id === categoryId)?.name ?? categoryId;
-    navigation.replace('Quiz', { categoryId, categoryName, mode });
+    navigation.replace('Quiz', { categoryId, categoryName, mode, questionIds });
   };
 
   const handleHome = () => {
@@ -83,7 +85,7 @@ export default function ResultsScreen() {
               <View key={q.id} style={styles.wrongCard}>
                 <Text style={styles.wrongQuestion}>{q.question}</Text>
                 <View style={styles.correctAnswerRow}>
-                  <Text style={styles.correctAnswerLabel}>Bonne réponse : </Text>
+                  <Text style={styles.correctAnswerLabel}>Correct answer: </Text>
                   <Text style={styles.correctAnswerText}>{q.options[q.correct]}</Text>
                 </View>
                 <Text style={styles.explanationText}>{q.explanation}</Text>
@@ -94,7 +96,7 @@ export default function ResultsScreen() {
 
         {wrongQuestions.length === 0 && (
           <View style={styles.perfectSection}>
-            <Text style={styles.perfectText}>Aucune erreur ! Chapeau 🎩</Text>
+            <Text style={styles.perfectText}>No mistakes! Well done 🎩</Text>
           </View>
         )}
 

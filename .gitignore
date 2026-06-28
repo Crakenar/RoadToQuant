@@ -9,3 +9,8 @@ StockPrediction/Stocks/
 Resources/
 
 /os-quiz-app/node_modules
+
+**.exe
+
+.idea
+.vs

@@ -49,8 +49,8 @@ export type RootStackParamList = {
   MainTabs: undefined;
   Subject: { subjectId: string; subjectName: string; subjectColor: string };
   Notes: { subjectId: string; subjectName: string; subjectColor: string };
-  Quiz: { categoryId: string; categoryName: string; mode: QuizMode };
-  Results: { score: number; total: number; wrongIds: string[]; categoryId: string; mode: QuizMode };
+  Quiz: { categoryId: string; categoryName: string; mode: QuizMode; questionIds?: string[] };
+  Results: { score: number; total: number; wrongIds: string[]; categoryId: string; mode: QuizMode; questionIds?: string[] };
 };
 
 export type TabParamList = {

@@ -50,7 +50,7 @@ const RATINGS: { rating: SRSRating; label: string; color: string; bg: string }[]
 export default function QuizScreen() {
   const navigation = useNavigation<QuizNavProp>();
   const route = useRoute<QuizRouteProp>();
-  const { categoryId, categoryName, mode } = route.params;
+  const { categoryId, categoryName, mode, questionIds: pinnedIds } = route.params;
   const { recordAnswer, recordSRS, getDueIds, srs } = useStore();
 
   const allQuestions = questionsData.questions;
@@ -58,7 +58,11 @@ export default function QuizScreen() {
 
   const [questions] = useState<ShuffledQ[]>(() => {
     let pool: typeof allQuestions;
-    if (categoryId === 'all') {
+    if (pinnedIds && pinnedIds.length > 0) {
+      // Specific question IDs passed directly (e.g. retry wrong cards)
+      const idSet = new Set(pinnedIds);
+      pool = allQuestions.filter((q) => idSet.has(q.id));
+    } else if (categoryId === 'all') {
       pool = allQuestions;
     } else if (categoryId.startsWith('subject:')) {
       const subjectId = categoryId.replace('subject:', '');
@@ -130,6 +134,7 @@ export default function QuizScreen() {
           wrongIds,
           categoryId,
           mode,
+          questionIds: pinnedIds,
         });
       } else {
         setCurrentIndex((i) => i + 1);
@@ -169,7 +174,7 @@ export default function QuizScreen() {
           <Text style={styles.categoryLabel}>{categoryName}</Text>
           {mode === 'review' && (
             <View style={styles.reviewBadge}>
-              <Text style={styles.reviewBadgeText}>🗓 Révision</Text>
+              <Text style={styles.reviewBadgeText}>🗓 Review</Text>
             </View>
           )}
         </View>
