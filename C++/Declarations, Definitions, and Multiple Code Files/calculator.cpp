@@ -34,22 +34,22 @@ int main()
     switch (std::stoi(operationOperator))
     {
     case Addition:
-        std::cout << "Addition : " << add(num1, num2) << std::endl;
+        std::cout << "Addition : " << MathUtils::add(num1, num2) << std::endl;
         break;
     case Subtraction:
-        std::cout << "Subtraction : " << sub(num1, num2) << std::endl;
+        std::cout << "Subtraction : " << MathUtils::sub(num1, num2) << std::endl;
         break;
     case Multiplication:
-        std::cout << "Multiplication : " << mul(num1, num2) << std::endl;
+        std::cout << "Multiplication : " << MathUtils::mul(num1, num2) << std::endl;
         break;
     case Division:
-        std::cout << "Division : " << divide(num1, num2) << std::endl;
+        std::cout << "Division : " << MathUtils::divide(num1, num2) << std::endl;
         break;
     case Square:
-        std::cout << "Square : " << square(num1) << square(num2) << std::endl;
+        std::cout << "Square : " << MathUtils::square(num1) << MathUtils::square(num2) << std::endl;
         break;
     case Modulo:
-        std::cout << "Modulo : " << mod(static_cast<int>(num1), static_cast<int>(num2)) << std::endl;
+        std::cout << "Modulo : " << MathUtils::mod(static_cast<int>(num1), static_cast<int>(num2)) << std::endl;
         break;
     default: throw std::invalid_argument(
             "Operator does not exist, please enter a number between 1 to 6");
