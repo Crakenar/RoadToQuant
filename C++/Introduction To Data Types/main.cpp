@@ -1,4 +1,5 @@
 #include <iostream>
+#include <limits>
 #include <vector>
 
 int main()
@@ -6,12 +7,16 @@ int main()
     /**
      * 64 bytes system
     */
+    int i =
+ std::numeric_limits<int>::max();
+    std::cout << ++i;
     std::cout << "Size of char : " << sizeof(char) << std::endl; // 1 byte
     std::cout << "Size of int : " << sizeof(int) << std::endl; // 4 bytes
     std::cout << "Size of double : " << sizeof(double) << std::endl; // 8
     std::cout << "Size of std::string : " << sizeof(std::string) << std::endl; // 32
     std::cout << "Size of std::nullptr_t : " << sizeof(std::nullptr_t) << std::endl; // 8
     std::cout << "Size of float : " << sizeof(float) << std::endl; // 4
+    std::cout << "Size of long : " << sizeof(long) << std::endl; // 4
 
     std::cout << "Size of std::vector int : " << sizeof(std::vector<int>) << std::endl; // 24
     std::cout << "Size of std::vector char : " << sizeof(std::vector<char>) << std::endl; // 24
