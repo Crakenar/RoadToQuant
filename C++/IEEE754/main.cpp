@@ -2,6 +2,7 @@
 #include <iostream>
 #include <limits>
 #include <ostream>
+#include <bitset>
 
 template<typename T>
 T sum(T arg) {
@@ -83,5 +84,5 @@ int main()
     static_cast<void>(xcast);
     xcast.operator void();
 
-    unsigned int c = unsigned int { 5 };
+    // unsigned int c = unsigned int { 5 };
 }
