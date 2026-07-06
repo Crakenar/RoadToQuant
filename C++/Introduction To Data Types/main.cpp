@@ -14,6 +14,7 @@ int main()
     std::cout << "Size of int : " << sizeof(int) << std::endl; // 4 bytes
     std::cout << "Size of double : " << sizeof(double) << std::endl; // 8
     std::cout << "Size of std::string : " << sizeof(std::string) << std::endl; // 32
+    std::cout << "Size of empty string : " << sizeof("") << std::endl; // 1
     std::cout << "Size of std::nullptr_t : " << sizeof(std::nullptr_t) << std::endl; // 8
     std::cout << "Size of float : " << sizeof(float) << std::endl; // 4
     std::cout << "Size of long : " << sizeof(long) << std::endl; // 4
