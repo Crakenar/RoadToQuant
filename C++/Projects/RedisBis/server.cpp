@@ -5,9 +5,11 @@
 #include <cerrno>
 #include <iostream>
 #include <unistd.h>
+#include <vector>
 #include <arpa/inet.h>
 #include <sys/socket.h>
 #include <netinet/ip.h>
+#include <poll.h>
 
 #include "helpers.cpp"
 
@@ -22,6 +24,45 @@ static void die(const char* msg)
     fprintf(stderr, "[%d] %s\n", err, msg);
     abort();
 }
+
+struct Conn
+{
+    int fd = -1;
+    bool want_read = false; // readiness API
+    bool want_write = false; // readiness API
+    bool want_close = false; // destroy
+    std::vector<uint8_t> b_incoming; // buffer data parsed
+    std::vector<uint8_t> b_outgoing; //buffer response
+};
+
+struct Pollfd {
+    int   fd;
+    short events;  // incoming events
+    short revents; // outgoing events
+};
+
+static void fd_set_nb(int fd) {
+    fcntl(fd, F_SETFL, fcntl(fd, F_GETFL, 0) | O_NONBLOCK);
+}
+
+static Conn *handle_accept(int fd) {
+    // accept
+    struct sockaddr_in client_addr = {};
+    socklen_t addrlen = sizeof(client_addr);
+    int connfd = accept(fd, (struct sockaddr *)&client_addr, &addrlen);
+    if (connfd < 0) {
+        return NULL;
+    }
+    // set the new connection fd to nonblocking mode
+    fd_set_nb(connfd);
+    // create a `struct Conn`
+    Conn *conn = new Conn();
+    conn->fd = connfd;
+    conn->want_read = true; // read the 1st request
+    return conn;
+}
+
+int poll(struct Pollfd *fds, nfds_t nfds, int timeout);
 
 static void do_something(int connfd)
 {
@@ -107,25 +148,63 @@ int main()
         die("listen()");
     }
 
+    std::vector<Conn *> fd2conn;
+    std::vector<Pollfd> poll_args;
+
     while (true)
     {
-        // accept
-        struct sockaddr_in client_addr = {};
-        socklen_t addrlen = sizeof(client_addr);
-        int connfd = accept(fd, (struct sockaddr*)&client_addr, &addrlen);
-        if (connfd < 0)
-        {
-            continue; // error
+        poll_args.clear();
+        struct Pollfd pfd = {fd, POLLIN, 0};
+        poll_args.push_back(pfd);
+        for (Conn *conn : fd2conn) {
+            if (!conn) {
+                continue;
+            }
+            struct Pollfd pfd = {conn->fd, POLLERR, 0};
+            // poll() flags from the application's intent
+            if (conn->want_read) {
+                pfd.events |= POLLIN;
+            }
+            if (conn->want_write) {
+                pfd.events |= POLLOUT;
+            }
+            poll_args.push_back(pfd);
+        }
+        int rv = poll(poll_args.data(), (nfds_t)poll_args.size(), -1);
+        if (rv < 0 && errno == EINTR) {
+            continue;   // not an error
+        }
+        if (rv < 0) {
+            die("poll");
         }
 
-        while (true)
-        {
-            int32_t err = one_request(connfd);
-            if (err)
-            {
-                break;
+        if (poll_args[0].revents) {
+            if (Conn *conn = handle_accept(fd)) {
+                // put it into the map
+                if (fd2conn.size() <= (size_t)conn->fd) {
+                    fd2conn.resize(conn->fd + 1);
+                }
+                fd2conn[conn->fd] = conn;
             }
         }
+
+        // // accept
+        // struct sockaddr_in client_addr = {};
+        // socklen_t addrlen = sizeof(client_addr);
+        // int connfd = accept(fd, (struct sockaddr*)&client_addr, &addrlen);
+        // if (connfd < 0)
+        // {
+        //     continue; // error
+        // }
+        //
+        // while (true)
+        // {
+        //     int32_t err = one_request(connfd);
+        //     if (err)
+        //     {
+        //         break;
+        //     }
+        // }
 
         // do_something(connfd);
         close(connfd);
