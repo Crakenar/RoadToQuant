@@ -3,3 +3,8 @@ cmake-build-debug
 *.jpg
 
 dataset
+
+yolov8n.pt
+yolo26n.pt
+runs
+plantdoc_detection
