@@ -5,10 +5,10 @@ from ultralytics import YOLO
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 
 def main():
-    model = YOLO("yolov8n.pt")
+    model = YOLO("../yolov8n.pt")
 
     results = model.train(
-        data=os.path.join(SCRIPT_DIR, "dataset", "plantdoc_detection", "data.yaml"),
+        data=os.path.join(SCRIPT_DIR, "../dataset", "FirstTrainingJob/plantdoc_detection", "data.yaml"),
         epochs=100,
         imgsz=416,
         batch=16,
