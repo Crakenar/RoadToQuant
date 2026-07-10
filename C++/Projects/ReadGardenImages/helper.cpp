@@ -74,9 +74,19 @@ namespace OnnxHelper
         return tensor;
     }
 
+    /**
+     *
+     * @param session
+     * @param img
+     * @param inputSize
+     * @param numClasses
+     * @param confThreshold
+     * @param nmsThreshold
+     * @return
+     */
     std::vector<Detection> runInference(Ort::Session& session, const cv::Mat& img,
-                                        int inputSize, int numClasses,
-                                        float confThreshold, float nmsThreshold)
+                                        const int inputSize, const int numClasses,
+                                        const float confThreshold, const float nmsThreshold)
     {
         float scale;
         int padX, padY;
@@ -96,11 +106,10 @@ namespace OnnxHelper
         auto outputTensors = session.Run(Ort::RunOptions{nullptr}, inputNames, &inputTensor, 1,
                                          outputNames, 1);
 
-        float* outputData = outputTensors[0].GetTensorMutableData<float>();
-        auto outputShape = outputTensors[0].GetTensorTypeAndShapeInfo().GetShape();
+        const float* outputData = outputTensors[0].GetTensorMutableData<float>();
+        const auto outputShape = outputTensors[0].GetTensorTypeAndShapeInfo().GetShape();
         // Expected shape: [1, 4+numClasses, N]
-        int dims = static_cast<int>(outputShape[1]); // e.g. 34
-        int numBoxes = static_cast<int>(outputShape[2]); // e.g. 3549
+        const int numBoxes = static_cast<int>(outputShape[2]); // e.g. 3549
 
         std::vector<cv::Rect> boxes;
         std::vector<float> confidences;
@@ -112,7 +121,6 @@ namespace OnnxHelper
             int maxClassId = -1;
             for (int c = 0; c < numClasses; ++c)
             {
-                // Data layout is [dims, numBoxes] flattened row-major, matching output0's shape
                 float score = outputData[(4 + c) * numBoxes + i];
                 if (score > maxScore)
                 {
@@ -143,10 +151,50 @@ namespace OnnxHelper
         cv::dnn::NMSBoxes(boxes, confidences, confThreshold, nmsThreshold, nmsIndices);
 
         std::vector<Detection> results;
-        for (int idx : nmsIndices)
+        for (const size_t idx : nmsIndices)
         {
             results.push_back({boxes[idx], confidences[idx], classIds[idx]});
         }
         return results;
+    }
+
+    namespace Health
+    {
+        HealthResult classifyHealth(Ort::Session& classifierSession, const cv::Mat& croppedImg,
+                                     const std::vector<std::string>& classNames, int inputSize)
+        {
+            // Classification preprocessing is simpler than detection — just resize + normalize,
+            // no letterbox padding needed since there's no bounding box to preserve
+            cv::Mat resized;
+            cv::resize(croppedImg, resized, cv::Size(inputSize, inputSize));
+            std::vector<float> tensorValues = imageToTensor(resized);  // reuse your existing helper
+
+            std::array<int64_t, 4> inputShape{1, 3, inputSize, inputSize};
+            Ort::MemoryInfo memoryInfo = Ort::MemoryInfo::CreateCpu(OrtArenaAllocator, OrtMemTypeDefault);
+            Ort::Value inputTensor = Ort::Value::CreateTensor<float>(
+                memoryInfo, tensorValues.data(), tensorValues.size(),
+                inputShape.data(), inputShape.size());
+
+            const char* inputNames[] = {"images"};   // confirmed via best_health.onnx metadata
+            const char* outputNames[] = {"output0"}; // confirmed via best_health.onnx metadata
+
+            auto outputTensors = classifierSession.Run(Ort::RunOptions{nullptr}, inputNames, &inputTensor, 1,
+                                                        outputNames, 1);
+
+            float* scores = outputTensors[0].GetTensorMutableData<float>();
+            auto shape = outputTensors[0].GetTensorTypeAndShapeInfo().GetShape();
+            int numClasses = static_cast<int>(shape[1]);
+
+            int bestIdx = 0;
+            float bestScore = scores[0];
+            for (int i = 1; i < numClasses; ++i) {
+                if (scores[i] > bestScore) {
+                    bestScore = scores[i];
+                    bestIdx = i;
+                }
+            }
+
+            return {classNames[bestIdx], bestScore};
+        }
     }
 }

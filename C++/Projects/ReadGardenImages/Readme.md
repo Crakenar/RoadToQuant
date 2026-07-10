@@ -20,7 +20,7 @@ Each is its own train → export → run cycle. They are not the same model at d
 ### Pipeline A — Training (offline, Python, done once per model)
 
 1. **Job 1 dataset**: object-detection format (bounding boxes), currently PlantDoc via Roboflow's public object-detection export (`public.roboflow.com/object-detection/plantdoc/1`, YOLOv8 format, CC BY 4.0 license). Known limitation: PlantDoc is leaf/disease-focused across ~13 species — it has **no flower class**, so Job 1 currently crops leaves reliably but performs poorly on flowers (see "Known limitations" below). Additional fruit/flower detection datasets from Roboflow Universe are the next step to broaden coverage.
-2. **Job 2 dataset**: classification format (pre-cropped images sorted into class folders, no bounding boxes needed) — e.g. PlantVillage or the PlantDoc classification variant from Kaggle. Not yet trained as of this recap.
+2. **Job 2 dataset**: classification format (pre-cropped images sorted into class folders, no bounding boxes needed) — PlantDoc classification variant, 27 classes (10 healthy species + 17 disease/species combinations). Trained via `ClassificationModelTraining/train_health_classifier.py`, exported to `best_health.onnx`.
 3. Python + Ultralytics YOLOv8 (`yolov8n.pt` for detection, `yolov8n-cls.pt` for classification) — fine-tuned via transfer learning rather than trained from scratch.
 4. Export trained model(s) to **ONNX** (`opset=12`, `dynamic=False`, `simplify=True` — static shapes needed for reliable downstream inference).
 
@@ -173,7 +173,7 @@ Model input/output tensor names, confirmed via a minimal load test (`Ort::Sessio
 ## Known limitations (current state)
 
 - **Job 1 only reliably detects leaves**, not fruit or flowers — PlantDoc has no training examples for either. Tested on a flower photo: model produced a low-quality crop (zoomed into a couple of petals rather than the whole flower), confirming it has no real concept of "flower" as a category.
-- **Job 2 (health classifier) not yet trained** — next step, using a classification-format dataset (PlantVillage or PlantDoc classification variant).
+- **Job 2 (health classifier) top-1 accuracy ≈ 70%** (top-5 ≈ 95.5%) on the held-out validation split — usable for a first pass across 27 fine-grained classes, but confidence should be surfaced to the user rather than treated as ground truth.
 - **mAP50 ≈ 0.43** on Job 1 is a working first pass, not production-quality. More/better labeled data (especially fruit + flower detection sets from Roboflow Universe) is the planned next step before expanding species/subject coverage.
 
 ## Gaps in the "matrices + threshold" approach, and what to add

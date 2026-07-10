@@ -18,4 +18,15 @@ namespace OnnxHelper
     std::vector<Detection> runInference(Ort::Session& session, const cv::Mat& img,
                                         int inputSize, int numClasses,
                                         float confThreshold, float nmsThreshold);
+
+    namespace Health
+    {
+        struct HealthResult {
+            std::string label;
+            float confidence;
+        };
+
+        HealthResult classifyHealth(Ort::Session& classifierSession, const cv::Mat& croppedImg,
+                             const std::vector<std::string>& classNames, int inputSize);
+    }
 }

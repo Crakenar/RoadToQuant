@@ -1,0 +1,8 @@
+plantdoc-dataset.zip
+
+file_renamer.py
+folder_renamer.py
+yolo26n.pt
+yolov8n-cls.pt
+runs_cls
+classification_data/*
